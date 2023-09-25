@@ -34,6 +34,19 @@ class Boleto implements \JsonSerializable
     public const TRINTA_DIAS = 30;
 
     /**
+    * Factory method to instance a new Boleto from API return
+    * @return self
+    */
+
+    public static function fromStdClass(stdClass $obj) {
+        $boleto = new self();
+        foreach ($obj as $property => $value) {
+            $boleto->$property = $value;
+        }
+        return $boleto;
+    }
+
+    /**
      * @deprecated Esse campo não é mais utilizado
      * @return mixed
      */
