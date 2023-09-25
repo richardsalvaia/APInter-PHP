@@ -1,5 +1,5 @@
 {
-	"name" : "ctodobom/api-inter",
+	"name" : "richardsalvaia/api-inter",
 	"type" : "package",
 	"description" : "Acesso à API do Banco Inter",
 	"license" : "LGPL-3.0-or-later",
