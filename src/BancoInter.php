@@ -277,6 +277,80 @@ class BancoInter
         return $reply;
     }
 
+    /**
+     *
+     * @param string $url
+     * @param \JsonSerializable $data
+     * @param array $http_params
+     * @throws BancoInterException
+     * @return \stdClass
+     */
+    public function controllerPut(
+        string $url,
+        \JsonSerializable $data,
+        array $http_params = null,
+        bool $postJson = true
+    ) {
+
+        if ($http_params == null) {
+            $http_params = array(
+                'accept: application/json',
+                'Content-type: application/' . ($postJson ? 'json' : 'x-www-form-urlencoded')
+            );
+        }
+
+        if (!($data instanceof TokenRequest)) {
+            $this->checkOAuthToken();
+        }
+
+        if ($this->oAuthToken) {
+            $http_params[] = 'Authorization: Bearer ' . $this->oAuthToken;
+        }
+
+        if ($postJson) {
+            $prepared_data = json_encode($data);
+        } else {
+            $prepared_data = http_build_query($data->jsonSerialize());
+        }
+
+        $retry = 5;
+        while ($retry > 0) {
+            $this->controllerInit($http_params);
+            curl_setopt($this->curl, CURLOPT_URL, $this->apiBaseURL . $url);
+
+            curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'PUT');
+            curl_setopt($this->curl, CURLOPT_POSTFIELDS, $prepared_data);
+
+            $curlReply = curl_exec($this->curl);
+            if (!$curlReply) {
+                $curl_error = curl_error($this->curl);
+            }
+            $http_code = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
+            $header_size = curl_getinfo($this->curl, CURLINFO_HEADER_SIZE);
+            curl_close($this->curl);
+            $this->curl = null;
+
+            $reply = new \stdClass();
+            $reply->header = substr($curlReply, 0, $header_size);
+            $reply->body = substr($curlReply, $header_size);
+
+            if ($http_code == 503) {
+                $retry--;
+            } else {
+                $retry = 0;
+            }
+        }
+
+        if ($http_code == 0) {
+            throw new \Exception("Curl error: " . $curl_error);
+        }
+
+        if ($http_code < 200 || $http_code > 299) {
+            throw new BancoInterException("Erro HTTP " . $http_code, $http_code, $reply);
+        }
+        return $reply;
+    }
+
     public function controllerGet(string $url, array $http_params = null)
     {
 
