@@ -38,7 +38,7 @@ class Boleto implements \JsonSerializable
     * @return self
     */
 
-    public static function fromStdClass(stdClass $obj) {
+    public static function fromStdClass(\stdClass $obj) {
         $boleto = new self();
         foreach ($obj as $property => $value) {
             $boleto->$property = $value;
