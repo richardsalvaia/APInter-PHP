@@ -3,6 +3,7 @@
 namespace ctodobom\APInterPHP;
 
 use ctodobom\APInterPHP\Cobranca\Boleto;
+use ctodobom\APInterPHP\Cobranca\Pix;
 use Closure;
 
 define("INTER_BAIXA_ACERTOS", "ACERTOS");
@@ -623,4 +624,43 @@ class BancoInter
 
         return json_decode($reply->body);
     }
+
+    /**
+     * Cria uma cobrança PIX (com ou sem txid) no Banco Inter
+     *
+     * @param  Boleto $boleto Boleto a ser transmitido
+     * @return Boleto
+     */
+
+    public function createPix(Pix $pix) {
+
+        $pix->setController($this);
+
+        $reply = $this->controllerPut('/pix/v2/cobv/'.$pix->getTxId(), $pix);
+
+        $replyData = json_decode($reply->body);
+
+        $pix->setTxId($replyData->txid);
+        $pix->setCalendario($replyData->calendario);
+        $pix->setStatus($replyData->status);
+        $pix->setLocation($replyData->loc->location);
+
+        return $pix;
+
+    }
+
+    /**
+     *
+     * @param  string $txid
+     * @return \stdClass
+     */
+    public function getPix(string $txid): \stdClass
+    {
+        $reply = $this->controllerGet("/pix/v2/cobv/" . $txid);
+
+        $replyData = json_decode($reply->body);
+
+        return $replyData;
+    }
+
 }
