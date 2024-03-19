@@ -4,6 +4,7 @@ namespace ctodobom\APInterPHP;
 
 use ctodobom\APInterPHP\Cobranca\Boleto;
 use ctodobom\APInterPHP\Cobranca\Pix;
+use ctodobom\APInterPHP\Cobranca\PixImediato;
 use Closure;
 
 define("INTER_BAIXA_ACERTOS", "ACERTOS");
@@ -239,6 +240,7 @@ class BancoInter
         } else {
             $prepared_data = http_build_query($data->jsonSerialize());
         }
+
 
         $retry = 5;
         while ($retry > 0) {
@@ -628,15 +630,21 @@ class BancoInter
     /**
      * Cria uma cobrança PIX (com ou sem txid) no Banco Inter
      *
-     * @param  Boleto $boleto Boleto a ser transmitido
+     * @param  Pix|PixImediato $pix
      * @return Boleto
      */
 
-    public function createPix(Pix $pix) {
+    public function createPix($pix) {
 
         $pix->setController($this);
 
-        $reply = $this->controllerPut('/pix/v2/cobv/'.$pix->getTxId(), $pix);
+        if ($pix instanceof PixImediato) {
+            $endPoint = '/pix/v2/cob/';
+        } else {
+            $endPoint = '/pix/v2/cobv/';
+        }
+
+        $reply = $this->controllerPut($endPoint.$pix->getTxId(), $pix);
 
         $replyData = json_decode($reply->body);
 
@@ -652,11 +660,18 @@ class BancoInter
     /**
      *
      * @param  string $txid
+     * @param "PixImediato" | "Pix" $type
      * @return \stdClass
      */
-    public function getPix(string $txid): \stdClass
+    public function getPix(string $txid, $type = "Pix"): \stdClass
     {
-        $reply = $this->controllerGet("/pix/v2/cobv/" . $txid);
+        $endPoints = ['PixImediato' => '/pix/v2/cob/', 'Pix' => '/pix/v2/cobv/'];
+
+        if (!$endPoints[$type]) {
+            throw new \Exception("Erro: tipo do pix invalido");
+        }
+
+        $reply = $this->controllerGet($endPoints[$type] . $txid);
 
         $replyData = json_decode($reply->body);
 
